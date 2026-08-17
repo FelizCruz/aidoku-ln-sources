@@ -1,6 +1,8 @@
 [workspace]
 members = [
     "sources/wetriedtls",
+    "sources/dreamytranslations",
+    "sources/novelarrow"
 ]
 resolver = "2"
 
@@ -8,7 +10,6 @@ resolver = "2"
 panic = "abort"
 
 [profile.release]
-panic = "abort"
 opt-level = "s"
-strip = true
 lto = true
+panic = "abort"

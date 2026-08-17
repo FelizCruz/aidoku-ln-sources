@@ -130,9 +130,16 @@
         .btn-secondary {
             background-color: rgba(255, 255, 255, 0.08);
             color: var(--text-primary);
+            padding: 10px 16px;
+            font-size: 13px;
         }
         .btn-secondary:hover {
             background-color: rgba(255, 255, 255, 0.15);
+        }
+        .sources-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
         }
         .source-item {
             display: flex;
@@ -214,7 +221,6 @@
             <h2>Add to Aidoku</h2>
             
             <div class="action-row">
-                <!-- 1-Tap button for iOS devices -->
                 <button id="add-btn" class="btn btn-large" onclick="openInAidoku()">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
                     Add Repository to Aidoku
@@ -230,7 +236,7 @@
             <div class="steps">
                 <div class="step">
                     <div class="step-number">1</div>
-                    <div>If clicking the button above doesn't open Aidoku, open <strong>Aidoku</strong> manually.</div>
+                    <div>If tapping the button above doesn't open Aidoku, open <strong>Aidoku</strong> manually.</div>
                 </div>
                 <div class="step">
                     <div class="step-number">2</div>
@@ -238,7 +244,7 @@
                 </div>
                 <div class="step">
                     <div class="step-number">3</div>
-                    <div>Tap <strong>+ (Add)</strong> and paste <code>https://felizcruz.github.io/aidoku-ln-sources/index.min.json</code></div>
+                    <div>Tap <strong>+ (Add)</strong> and enter <code>https://felizcruz.github.io/aidoku-ln-sources/index.min.json</code></div>
                 </div>
                 <div class="step">
                     <div class="step-number">4</div>
@@ -248,16 +254,40 @@
         </section>
 
         <section class="card">
-            <h2>Available Sources</h2>
-            <div class="source-item">
-                <div class="source-info">
-                    <img src="icons/en.wetriedtls-v1.png" alt="We Tried TLs" class="source-icon" />
-                    <div class="source-details">
-                        <h3>We Tried TLs</h3>
-                        <p>Korean web novel translations (v1) • English</p>
+            <h2>Available Sources (3)</h2>
+            <div class="sources-list">
+                <div class="source-item">
+                    <div class="source-info">
+                        <img src="icons/en.wetriedtls-v1.png" alt="We Tried TLs" class="source-icon" />
+                        <div class="source-details">
+                            <h3>We Tried TLs</h3>
+                            <p>Korean web novel translations (v1) • English</p>
+                        </div>
                     </div>
+                    <a href="sources/en.wetriedtls-v1.aix" download class="btn btn-secondary">Download .aix</a>
                 </div>
-                <a href="sources/en.wetriedtls-v1.aix" download class="btn btn-secondary">Download .aix</a>
+
+                <div class="source-item">
+                    <div class="source-info">
+                        <img src="icons/en.dreamytranslations-v1.png" alt="Dreamy Translations" class="source-icon" />
+                        <div class="source-details">
+                            <h3>Dreamy Translations</h3>
+                            <p>Premium web novel translations (v1) • English</p>
+                        </div>
+                    </div>
+                    <a href="sources/en.dreamytranslations-v1.aix" download class="btn btn-secondary">Download .aix</a>
+                </div>
+
+                <div class="source-item">
+                    <div class="source-info">
+                        <img src="icons/en.novelarrow-v1.png" alt="NovelArrow" class="source-icon" />
+                        <div class="source-details">
+                            <h3>NovelArrow</h3>
+                            <p>Popular web novels & serialized fiction (v1) • English</p>
+                        </div>
+                    </div>
+                    <a href="sources/en.novelarrow-v1.aix" download class="btn btn-secondary">Download .aix</a>
+                </div>
             </div>
         </section>
     </div>
