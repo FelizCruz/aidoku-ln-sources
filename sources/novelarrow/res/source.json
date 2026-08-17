@@ -2,7 +2,7 @@
 	"info": {
 		"id": "en.novelarrow",
 		"name": "NovelArrow",
-		"version": 1,
+		"version": 2,
 		"url": "https://novelarrow.com",
 		"contentRating": 0,
 		"languages": ["en"],
@@ -10,8 +10,8 @@
 	},
 	"listings": [
 		{
-			"id": "ranking",
-			"name": "Rankings"
+			"id": "rankings",
+			"name": "Top Rankings"
 		},
 		{
 			"id": "hot",
@@ -19,10 +19,10 @@
 		},
 		{
 			"id": "latest",
-			"name": "Latest Releases"
+			"name": "Latest Updates"
 		}
 	],
 	"config": {
-		"supportsTagSearch": true
+		"supportsTagSearch": false
 	}
 }

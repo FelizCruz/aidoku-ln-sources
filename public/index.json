@@ -4,9 +4,9 @@
     {
       "id": "en.dreamytranslations",
       "name": "Dreamy Translations",
-      "version": 2,
-      "iconURL": "icons/en.dreamytranslations-v2.png",
-      "downloadURL": "sources/en.dreamytranslations-v2.aix",
+      "version": 3,
+      "iconURL": "icons/en.dreamytranslations-v3.png",
+      "downloadURL": "sources/en.dreamytranslations-v3.aix",
       "languages": [
         "en"
       ],
@@ -17,9 +17,9 @@
     {
       "id": "en.novelarrow",
       "name": "NovelArrow",
-      "version": 1,
-      "iconURL": "icons/en.novelarrow-v1.png",
-      "downloadURL": "sources/en.novelarrow-v1.aix",
+      "version": 2,
+      "iconURL": "icons/en.novelarrow-v2.png",
+      "downloadURL": "sources/en.novelarrow-v2.aix",
       "languages": [
         "en"
       ],
@@ -30,9 +30,9 @@
     {
       "id": "en.wetriedtls",
       "name": "We Tried TLs",
-      "version": 1,
-      "iconURL": "icons/en.wetriedtls-v1.png",
-      "downloadURL": "sources/en.wetriedtls-v1.aix",
+      "version": 2,
+      "iconURL": "icons/en.wetriedtls-v2.png",
+      "downloadURL": "sources/en.wetriedtls-v2.aix",
       "languages": [
         "en"
       ],

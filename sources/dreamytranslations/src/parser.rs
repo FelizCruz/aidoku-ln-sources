@@ -1,9 +1,11 @@
-use aidoku::alloc::String;
+use aidoku::alloc::{string::ToString, String, Vec};
 
-pub fn html_to_markdown(html: &str) -> String {
+pub fn clean_html_tags(html: &str) -> String {
 	let mut result = String::new();
 	let mut in_tag = false;
 	let mut current_tag = String::new();
+	let mut skip_tag = false;
+	let mut skip_tag_name = String::new();
 	let mut chars = html.chars().peekable();
 
 	while let Some(c) = chars.next() {
@@ -16,11 +18,44 @@ pub fn html_to_markdown(html: &str) -> String {
 		if c == '>' && in_tag {
 			in_tag = false;
 			let tag_str = current_tag.trim().to_lowercase();
-			if tag_str == "/p" || tag_str == "/h1" || tag_str == "/h2" || tag_str == "/h3" {
+
+			if skip_tag {
+				let end_name = "/".to_string() + &skip_tag_name;
+				if tag_str.starts_with(&end_name) {
+					skip_tag = false;
+					skip_tag_name.clear();
+				}
+				continue;
+			}
+
+			if tag_str.starts_with("style")
+				|| tag_str.starts_with("script")
+				|| tag_str.starts_with("noscript")
+				|| tag_str.starts_with("head")
+				|| tag_str.starts_with("nav")
+				|| tag_str.starts_with("header")
+				|| tag_str.starts_with("footer")
+			{
+				skip_tag = true;
+				let space_idx = tag_str.find(' ').unwrap_or(tag_str.len());
+				skip_tag_name = tag_str[..space_idx].to_string();
+				continue;
+			}
+
+			if tag_str == "/p"
+				|| tag_str == "/h1"
+				|| tag_str == "/h2"
+				|| tag_str == "/h3"
+				|| tag_str == "/h4"
+			{
 				result.push_str("\n\n");
 			} else if tag_str == "br" || tag_str == "br/" || tag_str == "br /" {
 				result.push('\n');
-			} else if tag_str == "strong" || tag_str == "b" || tag_str == "/strong" || tag_str == "/b" {
+			} else if tag_str == "strong"
+				|| tag_str == "b"
+				|| tag_str == "/strong"
+				|| tag_str == "/b"
+			{
 				result.push_str("**");
 			} else if tag_str == "em" || tag_str == "i" || tag_str == "/em" || tag_str == "/i" {
 				result.push('*');
@@ -28,7 +63,7 @@ pub fn html_to_markdown(html: &str) -> String {
 				result.push_str("# ");
 			} else if tag_str.starts_with("h2") {
 				result.push_str("## ");
-			} else if tag_str.starts_with("h3") {
+			} else if tag_str.starts_with("h3") || tag_str.starts_with("h4") {
 				result.push_str("### ");
 			} else if tag_str == "hr" || tag_str == "hr/" || tag_str == "hr /" {
 				result.push_str("\n\n---\n\n");
@@ -38,6 +73,10 @@ pub fn html_to_markdown(html: &str) -> String {
 
 		if in_tag {
 			current_tag.push(c);
+			continue;
+		}
+
+		if skip_tag {
 			continue;
 		}
 
@@ -59,7 +98,7 @@ pub fn html_to_markdown(html: &str) -> String {
 				"lt" => result.push('<'),
 				"gt" => result.push('>'),
 				"quot" => result.push('"'),
-				"#39" | "apos" => result.push('\''),
+				"#39" | "apos" | "#x27" => result.push('\''),
 				"mdash" => result.push_str("—"),
 				"ndash" => result.push_str("–"),
 				"hellip" => result.push_str("…"),
@@ -76,4 +115,43 @@ pub fn html_to_markdown(html: &str) -> String {
 	}
 
 	result
+}
+
+pub fn html_to_markdown(html: &str) -> String {
+	let mut paragraphs = Vec::new();
+	let mut search_pos = 0;
+
+	while let Some(idx) = html[search_pos..].find("<p") {
+		let abs_idx = search_pos + idx;
+		if let Some(tag_end) = html[abs_idx..].find('>') {
+			let tag_header = &html[abs_idx..abs_idx + tag_end];
+			if tag_header.contains("line") {
+				if let Some(p_end) = html[abs_idx + tag_end..].find("</p>") {
+					let line_content = &html[abs_idx + tag_end + 1..abs_idx + tag_end + p_end];
+					let cleaned = clean_html_tags(line_content);
+					let trimmed = cleaned.trim();
+					if !trimmed.is_empty() && !trimmed.eq_ignore_ascii_case("view cover") {
+						paragraphs.push(trimmed.to_string());
+					}
+					search_pos = abs_idx + tag_end + p_end + 4;
+					continue;
+				}
+			}
+		}
+		search_pos = abs_idx + 2;
+	}
+
+	if !paragraphs.is_empty() {
+		return paragraphs.join("\n\n");
+	}
+
+	let cleaned = clean_html_tags(html);
+	let mut lines = Vec::new();
+	for line in cleaned.split('\n') {
+		let trimmed = line.trim();
+		if !trimmed.is_empty() {
+			lines.push(trimmed);
+		}
+	}
+	lines.join("\n\n")
 }

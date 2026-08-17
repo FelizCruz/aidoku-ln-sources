@@ -2,7 +2,7 @@
 	"info": {
 		"id": "en.wetriedtls",
 		"name": "We Tried TLs",
-		"version": 1,
+		"version": 2,
 		"url": "https://wetriedtls.com",
 		"contentRating": 0,
 		"languages": ["en"],
@@ -10,11 +10,11 @@
 	},
 	"listings": [
 		{
-			"id": "all",
-			"name": "All Novels"
+			"id": "latest",
+			"name": "Latest Updates"
 		}
 	],
 	"config": {
-		"supportsTagSearch": true
+		"supportsTagSearch": false
 	}
 }
