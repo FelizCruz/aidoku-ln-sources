@@ -17,22 +17,22 @@
     {
       "id": "en.fucknovelpia",
       "name": "FUCKNOVELPIA",
-      "version": 1,
-      "iconURL": "icons/en.fucknovelpia-v1.png",
-      "downloadURL": "sources/en.fucknovelpia-v1.aix",
+      "version": 2,
+      "iconURL": "icons/en.fucknovelpia-v2.png",
+      "downloadURL": "sources/en.fucknovelpia-v2.aix",
       "languages": [
         "en"
       ],
-      "contentRating": 2,
+      "contentRating": 0,
       "baseURL": "https://fucknovelpia.com",
       "minAppVersion": "0.7.1"
     },
     {
       "id": "en.novelarchive",
       "name": "NovelArchive",
-      "version": 1,
-      "iconURL": "icons/en.novelarchive-v1.png",
-      "downloadURL": "sources/en.novelarchive-v1.aix",
+      "version": 2,
+      "iconURL": "icons/en.novelarchive-v2.png",
+      "downloadURL": "sources/en.novelarchive-v2.aix",
       "languages": [
         "en"
       ],

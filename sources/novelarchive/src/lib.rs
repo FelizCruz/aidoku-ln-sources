@@ -31,7 +31,7 @@ fn format_cover_url(img: Option<String>) -> Option<String> {
 fn map_novel_item(n: NovelListItem) -> Option<Manga> {
 	let key = n.id?;
 	let title = n.title.unwrap_or_default();
-	let cover = format_cover_url(n.novel_image.or(n.image_url));
+	let cover = format_cover_url(n.novel_image.or(n.image_url).or(n.cover_url));
 	let authors = n.author.map(|a| vec![a]);
 	let tags = n.genres.map(|g| {
 		g.split(',')
@@ -39,7 +39,8 @@ fn map_novel_item(n: NovelListItem) -> Option<Manga> {
 			.filter(|t| !t.is_empty())
 			.collect::<Vec<_>>()
 	});
-	let status = match n.status.as_deref() {
+	let status_str = n.release_status.as_deref().or(n.status.as_deref());
+	let status = match status_str {
 		Some("completed") | Some("Completed") => MangaStatus::Completed,
 		Some("hiatus") | Some("Hiatus") => MangaStatus::Hiatus,
 		Some("cancelled") | Some("Cancelled") => MangaStatus::Cancelled,
@@ -80,9 +81,12 @@ impl Source for NovelArchive {
 			}
 		};
 
-		let response: NovelListResponse = Request::get(&url)?
+		let raw_json = Request::get(&url)?
 			.header("User-Agent", USER_AGENT)
-			.json_owned()?;
+			.string()?;
+
+		let response = serde_json::from_str::<NovelListResponse>(&raw_json)
+			.map_err(|_| error!("Failed to parse novel list"))?;
 
 		let entries = response
 			.novels
@@ -117,9 +121,12 @@ impl Source for NovelArchive {
 		let series_key = &manga.key;
 		let url = format!("{API_BASE}/novels/{series_key}");
 
-		let resp: NovelDetailResponse = Request::get(&url)?
+		let raw_json = Request::get(&url)?
 			.header("User-Agent", USER_AGENT)
-			.json_owned()?;
+			.string()?;
+
+		let resp = serde_json::from_str::<NovelDetailResponse>(&raw_json)
+			.map_err(|_| error!("Failed to parse novel details"))?;
 
 		let detail = resp.novel.ok_or_else(|| error!("Novel not found"))?;
 
@@ -142,10 +149,11 @@ impl Source for NovelArchive {
 						.collect::<Vec<_>>(),
 				);
 			}
-			if let Some(cover) = format_cover_url(detail.novel_image.or(detail.image_url)) {
+			if let Some(cover) = format_cover_url(detail.novel_image.or(detail.image_url).or(detail.cover_url)) {
 				manga.cover = Some(cover);
 			}
-			manga.status = match detail.status.as_deref() {
+			let status_str = detail.release_status.as_deref().or(detail.status.as_deref());
+			manga.status = match status_str {
 				Some("completed") | Some("Completed") => MangaStatus::Completed,
 				Some("hiatus") | Some("Hiatus") => MangaStatus::Hiatus,
 				Some("cancelled") | Some("Cancelled") => MangaStatus::Cancelled,
@@ -185,9 +193,12 @@ impl Source for NovelArchive {
 
 	fn get_page_list(&self, manga: Manga, chapter: Chapter) -> Result<Vec<Page>> {
 		let url = format!("{API_BASE}/novels/{}/chapters/{}", manga.key, chapter.key);
-		let resp: ChapterResponse = Request::get(&url)?
+		let raw_json = Request::get(&url)?
 			.header("User-Agent", USER_AGENT)
-			.json_owned()?;
+			.string()?;
+
+		let resp = serde_json::from_str::<ChapterResponse>(&raw_json)
+			.map_err(|_| error!("Failed to parse chapter content"))?;
 
 		let chapter_data = resp.chapter.ok_or_else(|| error!("Chapter not found"))?;
 		let content = chapter_data.content.unwrap_or_default();
@@ -207,7 +218,6 @@ impl ListingProvider for NovelArchive {
 			_ => format!("{API_BASE}/novels?sort=popular&page={page}&per_page=24"),
 		};
 
-		// Trending and RecentlyUpdated endpoints return array or NovelListResponse
 		let raw_json = Request::get(&url)?
 			.header("User-Agent", USER_AGENT)
 			.string()?;
@@ -221,7 +231,13 @@ impl ListingProvider for NovelArchive {
 				.collect::<Vec<_>>();
 			let has_next_page = resp
 				.pagination
-				.and_then(|p| p.has_next)
+				.and_then(|p| {
+					if let (Some(page), Some(total)) = (p.page, p.total_pages) {
+						Some(page < total)
+					} else {
+						p.has_next
+					}
+				})
 				.unwrap_or(entries.len() >= 24);
 			Ok(MangaPageResult {
 				entries,

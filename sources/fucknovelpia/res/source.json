@@ -2,9 +2,9 @@
 	"info": {
 		"id": "en.fucknovelpia",
 		"name": "FUCKNOVELPIA",
-		"version": 1,
+		"version": 2,
 		"url": "https://fucknovelpia.com",
-		"contentRating": 2,
+		"contentRating": 0,
 		"languages": ["en"],
 		"minAppVersion": "0.7.1"
 	},

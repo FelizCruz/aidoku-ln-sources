@@ -67,7 +67,7 @@ fn extract_novels_from_html(html: &str) -> Vec<Manga> {
 					title,
 					cover,
 					status: MangaStatus::Ongoing,
-					content_rating: ContentRating::NSFW,
+					content_rating: ContentRating::Safe,
 					viewer: Viewer::Vertical,
 					url: Some(format!("{BASE_URL}/novel/{slug}")),
 					..Default::default()
@@ -161,7 +161,7 @@ impl Source for FuckNovelPia {
 				}
 			}
 
-			manga.content_rating = ContentRating::NSFW;
+			manga.content_rating = ContentRating::Safe;
 			manga.viewer = Viewer::Vertical;
 			manga.status = MangaStatus::Ongoing;
 			manga.url = Some(format!("{BASE_URL}/novel/{series_key}"));
