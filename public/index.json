@@ -1,0 +1,17 @@
+{
+  "name": "Custom Light Novel Sources",
+  "sources": [
+    {
+      "id": "en.wetriedtls",
+      "name": "We Tried TLs",
+      "version": 1,
+      "iconURL": "icons/en.wetriedtls-v1.png",
+      "downloadURL": "sources/en.wetriedtls-v1.aix",
+      "languages": [
+        "en"
+      ],
+      "contentRating": 0,
+      "baseURL": "https://wetriedtls.com"
+    }
+  ]
+}

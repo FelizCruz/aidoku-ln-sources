@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aidoku Light Novel Sources</title>
+    <style>
+        :root {
+            --bg-color: #0b0f17;
+            --card-bg: #141b26;
+            --accent: #3b82f6;
+            --accent-hover: #2563eb;
+            --text-primary: #f8fafc;
+            --text-secondary: #94a3b8;
+            --border-color: #1e293b;
+            --success: #10b981;
+        }
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-primary);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 40px 20px;
+        }
+        .container {
+            max-width: 680px;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+        }
+        header {
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 12px;
+        }
+        .badge {
+            display: inline-block;
+            background-color: rgba(59, 130, 246, 0.15);
+            color: #60a5fa;
+            font-size: 12px;
+            font-weight: 600;
+            padding: 4px 12px;
+            border-radius: 9999px;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+        }
+        h1 {
+            font-size: 28px;
+            font-weight: 700;
+        }
+        p.subtitle {
+            color: var(--text-secondary);
+            font-size: 15px;
+            line-height: 1.5;
+        }
+        .card {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 14px;
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 18px;
+        }
+        .card h2 {
+            font-size: 18px;
+            font-weight: 600;
+        }
+        .url-box {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+        .url-input {
+            flex: 1;
+            background-color: rgba(0, 0, 0, 0.3);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 12px 14px;
+            color: var(--text-primary);
+            font-size: 14px;
+            font-family: monospace;
+            outline: none;
+        }
+        .btn {
+            background-color: var(--accent);
+            color: #ffffff;
+            border: none;
+            border-radius: 8px;
+            padding: 12px 20px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.15s ease-in-out;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+        .btn:hover {
+            background-color: var(--accent-hover);
+        }
+        .btn-secondary {
+            background-color: rgba(255, 255, 255, 0.08);
+            color: var(--text-primary);
+        }
+        .btn-secondary:hover {
+            background-color: rgba(255, 255, 255, 0.15);
+        }
+        .source-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background-color: rgba(0, 0, 0, 0.2);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            padding: 14px 16px;
+        }
+        .source-info {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+        .source-icon {
+            width: 44px;
+            height: 44px;
+            border-radius: 10px;
+            object-fit: cover;
+            background-color: #000;
+        }
+        .source-details h3 {
+            font-size: 16px;
+            font-weight: 600;
+        }
+        .source-details p {
+            font-size: 13px;
+            color: var(--text-secondary);
+        }
+        .steps {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            counter-reset: step-counter;
+        }
+        .step {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            font-size: 14px;
+            color: var(--text-secondary);
+            line-height: 1.5;
+        }
+        .step-number {
+            background-color: rgba(59, 130, 246, 0.2);
+            color: #60a5fa;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: 700;
+            flex-shrink: 0;
+        }
+        strong {
+            color: var(--text-primary);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="badge">Aidoku Source List</div>
+            <h1>Light Novel Sources</h1>
+            <p class="subtitle">Custom light novel & web novel extensions with native Markdown text rendering for the Aidoku app.</p>
+        </header>
+
+        <section class="card">
+            <h2>Add to Aidoku</h2>
+            <p class="subtitle">Copy this Source List URL and add it in Aidoku's settings:</p>
+            <div class="url-box">
+                <input id="source-url" class="url-input" readonly value="" />
+                <button id="copy-btn" class="btn" onclick="copyUrl()">Copy URL</button>
+            </div>
+            <div class="steps">
+                <div class="step">
+                    <div class="step-number">1</div>
+                    <div>Open <strong>Aidoku</strong> on your iOS / iPadOS device.</div>
+                </div>
+                <div class="step">
+                    <div class="step-number">2</div>
+                    <div>Navigate to <strong>Settings</strong> ➔ <strong>Source Lists</strong>.</div>
+                </div>
+                <div class="step">
+                    <div class="step-number">3</div>
+                    <div>Tap <strong>+ (Add)</strong> and paste the URL copied above.</div>
+                </div>
+                <div class="step">
+                    <div class="step-number">4</div>
+                    <div>Go to the <strong>Browse</strong> tab to install the sources!</div>
+                </div>
+            </div>
+        </section>
+
+        <section class="card">
+            <h2>Available Sources</h2>
+            <div class="source-item">
+                <div class="source-info">
+                    <img src="icons/en.wetriedtls-v1.png" alt="We Tried TLs" class="source-icon" />
+                    <div class="source-details">
+                        <h3>We Tried TLs</h3>
+                        <p>Korean web novel translations (v1) • English</p>
+                    </div>
+                </div>
+                <a href="sources/en.wetriedtls-v1.aix" download class="btn btn-secondary">Download .aix</a>
+            </div>
+        </section>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const urlInput = document.getElementById('source-url');
+            // Set URL to current origin + pathname directory
+            const fullUrl = window.location.href.split('?')[0].split('#')[0];
+            urlInput.value = fullUrl.endsWith('/') ? fullUrl : fullUrl + '/';
+        });
+
+        function copyUrl() {
+            const urlInput = document.getElementById('source-url');
+            urlInput.select();
+            navigator.clipboard.writeText(urlInput.value).then(() => {
+                const btn = document.getElementById('copy-btn');
+                btn.textContent = 'Copied!';
+                btn.style.backgroundColor = 'var(--success)';
+                setTimeout(() => {
+                    btn.textContent = 'Copy URL';
+                    btn.style.backgroundColor = 'var(--accent)';
+                }, 2000);
+            });
+        }
+    </script>
+</body>
+</html>

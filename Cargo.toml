@@ -1,0 +1,14 @@
+[workspace]
+members = [
+    "sources/wetriedtls",
+]
+resolver = "2"
+
+[profile.dev]
+panic = "abort"
+
+[profile.release]
+panic = "abort"
+opt-level = "s"
+strip = true
+lto = true
