@@ -38,23 +38,9 @@ jobs:
         with:
           python-version: '3.11'
 
-      - name: Build WebAssembly Sources
+      - name: Build and Package Sources
         run: |
-          cargo build --target wasm32-unknown-unknown --release
-
-      - name: Package .aix archives
-        run: |
-          python package_aix.py
-
-      - name: Build Public Source List
-        run: |
-          aidoku build sources/wetriedtls/wetriedtls.aix -o public --name "Custom Light Novel Sources"
-
-      - name: Copy Landing Page
-        run: |
-          if [ -f public/index.html ]; then
-            echo "Landing page already present"
-          fi
+          python build_public.py
 
       - name: Setup Pages
         uses: actions/configure-pages@v5
