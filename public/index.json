@@ -11,7 +11,8 @@
         "en"
       ],
       "contentRating": 0,
-      "baseURL": "https://wetriedtls.com"
+      "baseURL": "https://wetriedtls.com",
+      "minAppVersion": "0.7.1"
     }
   ]
 }

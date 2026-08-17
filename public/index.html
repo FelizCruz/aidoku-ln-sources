@@ -77,6 +77,11 @@
             font-size: 18px;
             font-weight: 600;
         }
+        .action-row {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
         .url-box {
             display: flex;
             gap: 8px;
@@ -98,8 +103,8 @@
             color: #ffffff;
             border: none;
             border-radius: 8px;
-            padding: 12px 20px;
-            font-size: 14px;
+            padding: 14px 20px;
+            font-size: 15px;
             font-weight: 600;
             cursor: pointer;
             transition: all 0.15s ease-in-out;
@@ -107,10 +112,20 @@
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            gap: 6px;
+            gap: 8px;
+            text-align: center;
         }
         .btn:hover {
             background-color: var(--accent-hover);
+        }
+        .btn-large {
+            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+            padding: 16px 24px;
+            font-size: 16px;
+            box-shadow: 0 4px 14px rgba(59, 130, 246, 0.3);
+        }
+        .btn-large:hover {
+            box-shadow: 0 6px 20px rgba(59, 130, 246, 0.45);
         }
         .btn-secondary {
             background-color: rgba(255, 255, 255, 0.08);
@@ -178,6 +193,13 @@
         strong {
             color: var(--text-primary);
         }
+        code {
+            background-color: rgba(0, 0, 0, 0.3);
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: monospace;
+            color: #93c5fd;
+        }
     </style>
 </head>
 <body>
@@ -190,15 +212,25 @@
 
         <section class="card">
             <h2>Add to Aidoku</h2>
-            <p class="subtitle">Copy this Source List URL and add it in Aidoku's settings:</p>
+            
+            <div class="action-row">
+                <!-- 1-Tap button for iOS devices -->
+                <button id="add-btn" class="btn btn-large" onclick="openInAidoku()">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
+                    Add Repository to Aidoku
+                </button>
+            </div>
+
+            <p class="subtitle">Or copy the exact Source List URL manually:</p>
             <div class="url-box">
-                <input id="source-url" class="url-input" readonly value="" />
+                <input id="source-url" class="url-input" readonly value="https://felizcruz.github.io/aidoku-ln-sources/index.min.json" />
                 <button id="copy-btn" class="btn" onclick="copyUrl()">Copy URL</button>
             </div>
+
             <div class="steps">
                 <div class="step">
                     <div class="step-number">1</div>
-                    <div>Open <strong>Aidoku</strong> on your iOS / iPadOS device.</div>
+                    <div>If clicking the button above doesn't open Aidoku, open <strong>Aidoku</strong> manually.</div>
                 </div>
                 <div class="step">
                     <div class="step-number">2</div>
@@ -206,7 +238,7 @@
                 </div>
                 <div class="step">
                     <div class="step-number">3</div>
-                    <div>Tap <strong>+ (Add)</strong> and paste the URL copied above.</div>
+                    <div>Tap <strong>+ (Add)</strong> and paste <code>https://felizcruz.github.io/aidoku-ln-sources/index.min.json</code></div>
                 </div>
                 <div class="step">
                     <div class="step-number">4</div>
@@ -231,17 +263,16 @@
     </div>
 
     <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            const urlInput = document.getElementById('source-url');
-            // Set URL to current origin + pathname directory
-            const fullUrl = window.location.href.split('?')[0].split('#')[0];
-            urlInput.value = fullUrl.endsWith('/') ? fullUrl : fullUrl + '/';
-        });
+        const MANIFEST_URL = "https://felizcruz.github.io/aidoku-ln-sources/index.min.json";
+
+        function openInAidoku() {
+            window.location.href = "aidoku://addSourceList?url=" + encodeURIComponent(MANIFEST_URL);
+        }
 
         function copyUrl() {
             const urlInput = document.getElementById('source-url');
             urlInput.select();
-            navigator.clipboard.writeText(urlInput.value).then(() => {
+            navigator.clipboard.writeText(MANIFEST_URL).then(() => {
                 const btn = document.getElementById('copy-btn');
                 btn.textContent = 'Copied!';
                 btn.style.backgroundColor = 'var(--success)';
