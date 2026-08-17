@@ -175,10 +175,11 @@ impl Source for FuckNovelPia {
 			while let Some(idx) = html[pos..].find("href=\"/chapter.php?") {
 				let abs_start = pos + idx + 18;
 				if let Some(end) = html[abs_start..].find('\"') {
-					let query_str = &html[abs_start..abs_start + end];
+					let raw_query = &html[abs_start..abs_start + end];
+					let query_str = raw_query.replace("&amp;", "&");
 					
-					if !seen_keys.contains(&query_str.to_string()) {
-						seen_keys.push(query_str.to_string());
+					if !seen_keys.contains(&query_str) {
+						seen_keys.push(query_str.clone());
 
 						// Extract ch= number for chapter ordering
 						let mut chapter_number = None;
@@ -205,7 +206,7 @@ impl Source for FuckNovelPia {
 						let chapter_url = format!("{BASE_URL}/chapter.php?{query_str}");
 
 						chapters.push(Chapter {
-							key: query_str.to_string(),
+							key: query_str,
 							title,
 							chapter_number,
 							url: Some(chapter_url),
@@ -232,30 +233,40 @@ impl Source for FuckNovelPia {
 	}
 
 	fn get_page_list(&self, _manga: Manga, chapter: Chapter) -> Result<Vec<Page>> {
-		let url = if chapter.key.starts_with("http") {
-			chapter.key
+		let clean_key = chapter.key.replace("&amp;", "&");
+		let url = if clean_key.starts_with("http") {
+			clean_key
 		} else {
-			format!("{BASE_URL}/chapter.php?{}", chapter.key)
+			format!("{BASE_URL}/chapter.php?{clean_key}")
 		};
 
 		let html = Request::get(&url)?
 			.header("User-Agent", USER_AGENT)
 			.string()?;
 
-		// 1. Check if chapter is an image/scan page
+		// 1. Extract any image URLs (kfcok images embedded via img, svg xlink:href, or href)
 		let mut img_urls = Vec::new();
 		let mut pos = 0;
-		while let Some(idx) = html[pos..].find("src=\"https://img.kfcok.net/books/") {
-			let abs_start = pos + idx + 5;
-			if let Some(end) = html[abs_start..].find('\"') {
-				let img_url = &html[abs_start..abs_start + end];
-				if !img_urls.contains(&img_url.to_string()) {
-					img_urls.push(img_url.to_string());
-				}
-				pos = abs_start + end;
-			} else {
-				break;
+		while let Some(idx) = html[pos..].find("https://img.kfcok.net/") {
+			let abs_start = pos + idx;
+			let sub = &html[abs_start..];
+			let end_idx = sub
+				.find(|c: char| {
+					c == '\"'
+						|| c == '\''
+						|| c == ' '
+						|| c == '>'
+						|| c == '<'
+						|| c == '\n'
+						|| c == '\r'
+						|| c == '\t'
+				})
+				.unwrap_or(sub.len());
+			let raw_url = sub[..end_idx].trim();
+			if !raw_url.is_empty() && !img_urls.contains(&raw_url.to_string()) {
+				img_urls.push(raw_url.to_string());
 			}
+			pos = abs_start + end_idx;
 		}
 
 		if !img_urls.is_empty() {
