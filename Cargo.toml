@@ -2,14 +2,8 @@
 members = [
     "sources/wetriedtls",
     "sources/dreamytranslations",
-    "sources/novelarrow"
+    "sources/novelarrow",
+    "sources/fucknovelpia",
+    "sources/novelarchive",
 ]
 resolver = "2"
-
-[profile.dev]
-panic = "abort"
-
-[profile.release]
-opt-level = "s"
-lto = true
-panic = "abort"

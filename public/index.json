@@ -15,6 +15,32 @@
       "minAppVersion": "0.7.1"
     },
     {
+      "id": "en.fucknovelpia",
+      "name": "FUCKNOVELPIA",
+      "version": 1,
+      "iconURL": "icons/en.fucknovelpia-v1.png",
+      "downloadURL": "sources/en.fucknovelpia-v1.aix",
+      "languages": [
+        "en"
+      ],
+      "contentRating": 2,
+      "baseURL": "https://fucknovelpia.com",
+      "minAppVersion": "0.7.1"
+    },
+    {
+      "id": "en.novelarchive",
+      "name": "NovelArchive",
+      "version": 1,
+      "iconURL": "icons/en.novelarchive-v1.png",
+      "downloadURL": "sources/en.novelarchive-v1.aix",
+      "languages": [
+        "en"
+      ],
+      "contentRating": 0,
+      "baseURL": "https://novelarchive.cc",
+      "minAppVersion": "0.7.1"
+    },
+    {
       "id": "en.novelarrow",
       "name": "NovelArrow",
       "version": 2,

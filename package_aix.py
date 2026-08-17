@@ -29,11 +29,11 @@ def build_aix(source_dir, output_aix):
     print(f"[{source_name}] Successfully packaged -> {output_aix} ({os.path.getsize(output_aix)} bytes)")
 
 def package_all():
-    sources = ["sources/wetriedtls", "sources/dreamytranslations", "sources/novelarrow"]
-    for s in sources:
-        if os.path.exists(s):
-            s_name = os.path.basename(s)
-            build_aix(s, f"{s}/{s_name}.aix")
+    sources_dir = "sources"
+    for d in sorted(os.listdir(sources_dir)):
+        full_d = os.path.join(sources_dir, d)
+        if os.path.isdir(full_d) and os.path.exists(os.path.join(full_d, "res", "source.json")):
+            build_aix(full_d, os.path.join(full_d, f"{d}.aix"))
 
 if __name__ == "__main__":
     package_all()

@@ -254,40 +254,9 @@
         </section>
 
         <section class="card">
-            <h2>Available Sources (3)</h2>
-            <div class="sources-list">
-                <div class="source-item">
-                    <div class="source-info">
-                        <img src="icons/en.wetriedtls-v1.png" alt="We Tried TLs" class="source-icon" />
-                        <div class="source-details">
-                            <h3>We Tried TLs</h3>
-                            <p>Korean web novel translations (v1) • English</p>
-                        </div>
-                    </div>
-                    <a href="sources/en.wetriedtls-v1.aix" download class="btn btn-secondary">Download .aix</a>
-                </div>
-
-                <div class="source-item">
-                    <div class="source-info">
-                        <img src="icons/en.dreamytranslations-v1.png" alt="Dreamy Translations" class="source-icon" />
-                        <div class="source-details">
-                            <h3>Dreamy Translations</h3>
-                            <p>Premium web novel translations (v1) • English</p>
-                        </div>
-                    </div>
-                    <a href="sources/en.dreamytranslations-v1.aix" download class="btn btn-secondary">Download .aix</a>
-                </div>
-
-                <div class="source-item">
-                    <div class="source-info">
-                        <img src="icons/en.novelarrow-v1.png" alt="NovelArrow" class="source-icon" />
-                        <div class="source-details">
-                            <h3>NovelArrow</h3>
-                            <p>Popular web novels & serialized fiction (v1) • English</p>
-                        </div>
-                    </div>
-                    <a href="sources/en.novelarrow-v1.aix" download class="btn btn-secondary">Download .aix</a>
-                </div>
+            <h2>Available Sources (<span id="source-count">5</span>)</h2>
+            <div id="sources-container" class="sources-list">
+                <!-- Sources loaded dynamically from index.min.json -->
             </div>
         </section>
     </div>
@@ -312,6 +281,31 @@
                 }, 2000);
             });
         }
+
+        fetch('index.min.json')
+            .then(res => res.json())
+            .then(data => {
+                const container = document.getElementById('sources-container');
+                const count = document.getElementById('source-count');
+                if (data && data.sources) {
+                    count.textContent = data.sources.length;
+                    container.innerHTML = data.sources.map(s => `
+                        <div class="source-item">
+                            <div class="source-info">
+                                <img src="${s.iconURL}" alt="${s.name}" class="source-icon" />
+                                <div class="source-details">
+                                    <h3>${s.name}</h3>
+                                    <p>${s.id} (v${s.version}) • ${s.languages.join(', ')}</p>
+                                </div>
+                            </div>
+                            <a href="${s.downloadURL}" download class="btn btn-secondary">Download .aix</a>
+                        </div>
+                    `).join('');
+                }
+            })
+            .catch(() => {
+                // Fallback static list
+            });
     </script>
 </body>
 </html>

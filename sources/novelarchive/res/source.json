@@ -1,0 +1,28 @@
+{
+	"info": {
+		"id": "en.novelarchive",
+		"name": "NovelArchive",
+		"version": 1,
+		"url": "https://novelarchive.cc",
+		"contentRating": 0,
+		"languages": ["en"],
+		"minAppVersion": "0.7.1"
+	},
+	"listings": [
+		{
+			"id": "popular",
+			"name": "Popular Novels"
+		},
+		{
+			"id": "trending",
+			"name": "Trending"
+		},
+		{
+			"id": "latest",
+			"name": "Recently Updated"
+		}
+	],
+	"config": {
+		"supportsTagSearch": false
+	}
+}
