@@ -4,9 +4,9 @@
     {
       "id": "en.dreamytranslations",
       "name": "Dreamy Translations",
-      "version": 1,
-      "iconURL": "icons/en.dreamytranslations-v1.png",
-      "downloadURL": "sources/en.dreamytranslations-v1.aix",
+      "version": 2,
+      "iconURL": "icons/en.dreamytranslations-v2.png",
+      "downloadURL": "sources/en.dreamytranslations-v2.aix",
       "languages": [
         "en"
       ],

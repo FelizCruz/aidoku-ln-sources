@@ -7,6 +7,7 @@ use aidoku::{
 	Chapter, DeepLinkHandler, DeepLinkResult, FilterValue, Listing, ListingProvider, Manga,
 	MangaPageResult, MangaStatus, Page, PageContent, Result, Source, Viewer,
 };
+use serde_json::Value;
 
 mod models;
 mod parser;
@@ -19,29 +20,24 @@ struct DreamyTranslations;
 
 fn extract_projects_from_rsc(rsc: &str) -> Vec<ProjectItem> {
 	for line in rsc.split('\n') {
-		if let Some(idx) = line.find("\"projects\":") {
-			if let Some(start) = line[idx..].find('[') {
-				let abs_start = idx + start;
-				if let Some(end) = line[abs_start..].find(",\"genres\":") {
-					let json_str = &line[abs_start..abs_start + end];
-					if let Ok(projects) = serde_json::from_str::<Vec<ProjectItem>>(json_str) {
-						return projects;
+		if line.contains("\"projects\":") {
+			let payload = if let Some(colon) = line.find(':') {
+				&line[colon + 1..]
+			} else {
+				line
+			};
+			if let Ok(Value::Array(arr)) = serde_json::from_str::<Value>(payload) {
+				if let Some(props) = arr.get(3) {
+					if let Some(projects_val) = props.get("projects") {
+						if let Ok(projects) = serde_json::from_value::<Vec<ProjectItem>>(projects_val.clone()) {
+							return projects;
+						}
 					}
 				}
 			}
 		}
 	}
 	Vec::new()
-}
-
-fn extract_cover_from_html(html: &str) -> Option<String> {
-	if let Some(idx) = html.find("https://supabase.dreamy-translations.com/storage/v1/object/public/covers/") {
-		let sub = &html[idx..];
-		if let Some(end) = sub.find('"').or_else(|| sub.find('\'')) {
-			return Some(sub[..end].to_string());
-		}
-	}
-	None
 }
 
 impl Source for DreamyTranslations {
@@ -129,82 +125,81 @@ impl Source for DreamyTranslations {
 			.header("RSC", "1")
 			.string()?;
 
-		if needs_details {
-			if let Some(idx) = rsc_data.find("{\"project\":") {
-				if let Some(start) = rsc_data[idx..].find('{') {
-					let abs_start = idx + start + 10;
-					if let Some(end) = rsc_data[abs_start..].find(",\"chapters\":") {
-						let proj_json = &rsc_data[abs_start..abs_start + end];
-						if let Ok(proj) = serde_json::from_str::<ProjectItem>(proj_json) {
-							if let Some(title) = proj.title {
-								manga.title = title;
+		if needs_details || needs_chapters {
+			for line in rsc_data.split('\n') {
+				if line.contains("\"project\":") && line.contains("\"chapters\":") {
+					let payload = if let Some(colon) = line.find(':') {
+						&line[colon + 1..]
+					} else {
+						line
+					};
+					if let Ok(Value::Array(arr)) = serde_json::from_str::<Value>(payload) {
+						if let Some(props) = arr.get(3) {
+							if needs_details {
+								if let Some(proj_val) = props.get("project") {
+									if let Ok(proj) = serde_json::from_value::<ProjectItem>(proj_val.clone()) {
+										if let Some(title) = proj.title {
+											manga.title = title;
+										}
+										if let Some(author) = proj.author {
+											manga.authors = Some(vec![author]);
+										}
+										if let Some(desc) = proj.synopsis.or(proj.short_synopsis) {
+											manga.description = Some(desc);
+										}
+										if let Some(tags) = proj.tags.or(proj.genres) {
+											manga.tags = Some(tags);
+										}
+										manga.status = if proj.completed == Some(true) {
+											MangaStatus::Completed
+										} else {
+											MangaStatus::Ongoing
+										};
+									}
+								}
+								if let Some(Value::String(cover)) = props.get("coverUrl") {
+									manga.cover = Some(cover.clone());
+								}
+								manga.viewer = Viewer::Vertical;
+								manga.url = Some(format!("{BASE_URL}/novel/{series_key}"));
 							}
-							if let Some(author) = proj.author {
-								manga.authors = Some(vec![author]);
+
+							if needs_chapters {
+								if let Some(chaps_val) = props.get("chapters") {
+									if let Ok(chaps) = serde_json::from_value::<Vec<ChapterItem>>(chaps_val.clone()) {
+										let chapters = chaps
+											.into_iter()
+											.filter_map(|c| {
+												let chapter_number = c.index;
+												let index_val = chapter_number.unwrap_or(0.0);
+												let key = if (index_val as i32 as f32) == index_val {
+													format!("{}", index_val as i32)
+												} else {
+													format!("{}", index_val)
+												};
+
+												let title = c.title;
+												let locked = !c.free.unwrap_or(true);
+												let chapter_url = format!("{BASE_URL}/novel/{series_key}/chapter/{key}");
+
+												Some(Chapter {
+													key,
+													title,
+													chapter_number,
+													url: Some(chapter_url),
+													locked,
+													..Default::default()
+												})
+											})
+											.collect::<Vec<_>>();
+
+										manga.chapters = Some(chapters);
+									}
+								}
 							}
-							if let Some(desc) = proj.synopsis.or(proj.short_synopsis) {
-								manga.description = Some(desc);
-							}
-							if let Some(tags) = proj.tags.or(proj.genres) {
-								manga.tags = Some(tags);
-							}
-							manga.status = if proj.completed == Some(true) {
-								MangaStatus::Completed
-							} else {
-								MangaStatus::Ongoing
-							};
 						}
 					}
-				}
-			}
-
-			// Extract cover image from novel HTML
-			if let Ok(html) = Request::get(&url)?.header("User-Agent", "Aidoku").string() {
-				if let Some(cover_url) = extract_cover_from_html(&html) {
-					manga.cover = Some(cover_url);
-				}
-			}
-
-			manga.viewer = Viewer::Vertical;
-			manga.url = Some(format!("{BASE_URL}/novel/{series_key}"));
-		}
-
-		if needs_chapters {
-			if let Some(idx) = rsc_data.find("\"chapters\":") {
-				if let Some(start) = rsc_data[idx..].find('[') {
-					let abs_start = idx + start;
-					if let Some(end) = rsc_data[abs_start..].find("]}") {
-						let chaps_json = &rsc_data[abs_start..=abs_start + end];
-						if let Ok(chaps) = serde_json::from_str::<Vec<ChapterItem>>(chaps_json) {
-							let chapters = chaps
-								.into_iter()
-								.filter_map(|c| {
-									let chapter_number = c.index;
-									let index_val = chapter_number.unwrap_or(0.0);
-									let key = if (index_val as i32 as f32) == index_val {
-										format!("{}", index_val as i32)
-									} else {
-										format!("{}", index_val)
-									};
-
-									let title = c.title;
-									let locked = !c.free.unwrap_or(true);
-									let chapter_url = format!("{BASE_URL}/novel/{series_key}/chapter/{key}");
-
-									Some(Chapter {
-										key,
-										title,
-										chapter_number,
-										url: Some(chapter_url),
-										locked,
-										..Default::default()
-									})
-								})
-								.collect::<Vec<_>>();
-
-							manga.chapters = Some(chapters);
-						}
-					}
+					break;
 				}
 			}
 		}
