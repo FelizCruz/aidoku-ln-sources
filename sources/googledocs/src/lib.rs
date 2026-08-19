@@ -141,7 +141,7 @@ impl Source for GoogleDocs {
 		}
 
 		if needs_chapters {
-			let text = extract_doc_text_from_html(&html);
+			let (text, _) = extract_doc_text_and_styles(&html);
 			let chapter_entries = find_chapter_boundaries(&text);
 
 			let chapters = chapter_entries
@@ -178,14 +178,14 @@ impl Source for GoogleDocs {
 			.header("User-Agent", USER_AGENT)
 			.string()?;
 
-		let full_text = extract_doc_text_from_html(&html);
+		let (full_text, flags) = extract_doc_text_and_styles(&html);
 
 		let markdown_text = match (start_pos, end_pos) {
 			(Some(start), Some(end)) if start < full_text.len() => {
-				get_chapter_content(&full_text, start, end)
+				build_chapter_markdown(&full_text, &flags, start, end)
 			}
 			_ => {
-				full_text.replace('\u{000C}', "\n\n").trim().to_string()
+				build_chapter_markdown(&full_text, &flags, 0, full_text.len())
 			}
 		};
 
