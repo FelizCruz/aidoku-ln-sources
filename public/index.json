@@ -30,9 +30,9 @@
     {
       "id": "en.googledocs",
       "name": "Google Docs",
-      "version": 2,
-      "iconURL": "icons/en.googledocs-v2.png",
-      "downloadURL": "sources/en.googledocs-v2.aix",
+      "version": 3,
+      "iconURL": "icons/en.googledocs-v3.png",
+      "downloadURL": "sources/en.googledocs-v3.aix",
       "languages": [
         "en"
       ],

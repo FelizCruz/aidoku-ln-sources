@@ -69,7 +69,6 @@ impl Source for GoogleDocs {
 			if !trimmed.is_empty() {
 				let doc_id = extract_doc_id(trimmed);
 
-				// If query looks like a Google Doc ID or URL
 				if doc_id.len() >= 20 && !doc_id.contains(' ') {
 					let url = format!("{BASE_URL}/document/d/{doc_id}/edit?usp=sharing");
 					let html = Request::get(&url)?
@@ -94,7 +93,6 @@ impl Source for GoogleDocs {
 					});
 				}
 
-				// Otherwise filter featured list
 				let featured = get_featured_novels();
 				let filtered = featured
 					.into_iter()
@@ -141,8 +139,8 @@ impl Source for GoogleDocs {
 		}
 
 		if needs_chapters {
-			let (text, _) = extract_doc_text_and_styles(&html);
-			let chapter_entries = find_chapter_boundaries(&text);
+			let model = parse_google_doc_model(&html);
+			let chapter_entries = find_chapter_boundaries(&model.chars);
 
 			let chapters = chapter_entries
 				.into_iter()
@@ -178,14 +176,14 @@ impl Source for GoogleDocs {
 			.header("User-Agent", USER_AGENT)
 			.string()?;
 
-		let (full_text, flags) = extract_doc_text_and_styles(&html);
+		let model = parse_google_doc_model(&html);
 
 		let markdown_text = match (start_pos, end_pos) {
-			(Some(start), Some(end)) if start < full_text.len() => {
-				build_chapter_markdown(&full_text, &flags, start, end)
+			(Some(start), Some(end)) if start < model.chars.len() => {
+				build_chapter_markdown(&model.chars, &model.flags, start, end)
 			}
 			_ => {
-				build_chapter_markdown(&full_text, &flags, 0, full_text.len())
+				build_chapter_markdown(&model.chars, &model.flags, 0, model.chars.len())
 			}
 		};
 

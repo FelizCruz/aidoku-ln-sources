@@ -67,41 +67,77 @@ pub fn unescape_json_string(s: &str) -> String {
 	res
 }
 
-pub fn extract_doc_text_and_styles(html: &str) -> (String, Vec<u8>) {
-	let mut full_text = String::new();
-	let pattern = "\"s\":\"";
+pub struct DocModel {
+	pub chars: Vec<char>,
+	pub flags: Vec<u8>,
+}
+
+pub fn parse_google_doc_model(html: &str) -> DocModel {
+	// 1. Collect all "is" string operations with their ibi
+	let mut text_ops: Vec<(usize, Vec<char>)> = Vec::new();
+	let mut max_char_pos = 0usize;
+
 	let mut pos = 0;
+	let is_pattern = "\"ty\":\"is\"";
+	while let Some(idx) = html[pos..].find(is_pattern) {
+		let match_start = pos + idx;
+		let search_start = if match_start > 50 { match_start - 50 } else { 0 };
+		let search_end = core::cmp::min(match_start + 40000, html.len());
+		let block = &html[search_start..search_end];
 
-	// 1. Extract all text strings
-	while let Some(idx) = html[pos..].find(pattern) {
-		let abs_start = pos + idx + pattern.len();
-		let sub = &html[abs_start..];
-
-		let mut in_escape = false;
-		let mut end_idx = sub.len();
-
-		for (byte_idx, b) in sub.bytes().enumerate() {
-			if in_escape {
-				in_escape = false;
-			} else if b == b'\\' {
-				in_escape = true;
-			} else if b == b'\"' {
-				end_idx = byte_idx;
-				break;
+		let mut ibi_val = None;
+		if let Some(ibi_idx) = block.find("\"ibi\":") {
+			let after = &block[ibi_idx + 6..];
+			let num_str = after.trim_start().split(|c: char| !c.is_ascii_digit()).next().unwrap_or("");
+			if let Ok(num) = num_str.parse::<usize>() {
+				ibi_val = Some(num);
 			}
 		}
 
-		let raw_str = &sub[..end_idx];
-		let unescaped = unescape_json_string(raw_str);
-		full_text.push_str(&unescaped);
+		if let (Some(ibi), Some(s_idx)) = (ibi_val, block.find("\"s\":\"")) {
+			let sub = &block[s_idx + 5..];
+			let mut in_escape = false;
+			let mut end_idx = sub.len();
 
-		pos = abs_start + end_idx + 1;
+			for (byte_idx, b) in sub.bytes().enumerate() {
+				if in_escape {
+					in_escape = false;
+				} else if b == b'\\' {
+					in_escape = true;
+				} else if b == b'\"' {
+					end_idx = byte_idx;
+					break;
+				}
+			}
+
+			let raw_str = &sub[..end_idx];
+			let unescaped = unescape_json_string(raw_str);
+			let char_vec: Vec<char> = unescaped.chars().collect();
+			let end_pos = ibi.saturating_sub(1) + char_vec.len();
+			if end_pos > max_char_pos {
+				max_char_pos = end_pos;
+			}
+			text_ops.push((ibi, char_vec));
+			pos = search_start + s_idx + 5 + end_idx + 1;
+		} else {
+			pos = match_start + is_pattern.len();
+		}
 	}
 
-	let text_len = full_text.len();
-	let mut flags = vec![0u8; text_len];
+	// 2. Build character grid
+	let mut chars = vec![' '; max_char_pos];
+	for (ibi, char_vec) in text_ops {
+		let start = ibi.saturating_sub(1);
+		for (offset, c) in char_vec.into_iter().enumerate() {
+			let p = start + offset;
+			if p < chars.len() {
+				chars[p] = c;
+			}
+		}
+	}
 
-	// 2. Extract style spans: scan for `"st":"text"` or `"st": "text"`
+	// 3. Extract styles
+	let mut flags = vec![0u8; chars.len()];
 	pos = 0;
 	let st_pattern = "\"st\":\"text\"";
 	while let Some(idx) = html[pos..].find(st_pattern) {
@@ -134,8 +170,8 @@ pub fn extract_doc_text_and_styles(html: &str) -> (String, Vec<u8>) {
 			}
 
 			if let (Some(si), Some(ei)) = (si_val, ei_val) {
-				let start = if si > 0 { si - 1 } else { 0 };
-				let end = core::cmp::min(ei, text_len);
+				let start = si.saturating_sub(1);
+				let end = core::cmp::min(ei, chars.len());
 				let mask = (if is_bold { 1 } else { 0 }) | (if is_italic { 2 } else { 0 });
 				for k in start..end {
 					flags[k] |= mask;
@@ -146,66 +182,65 @@ pub fn extract_doc_text_and_styles(html: &str) -> (String, Vec<u8>) {
 		pos = match_start + st_pattern.len();
 	}
 
-	(full_text, flags)
+	DocModel { chars, flags }
 }
 
-pub fn find_chapter_boundaries(text: &str) -> Vec<ChapterEntry> {
-	let mut chapters = Vec::new();
+pub fn find_chapter_boundaries(chars: &[char]) -> Vec<ChapterEntry> {
 	let mut marker_positions = Vec::new();
+	let len = chars.len();
 
-	let bytes = text.as_bytes();
-	let len = bytes.len();
 	let mut i = 0;
-
 	while i < len {
-		let is_start = i == 0 || bytes[i - 1] == b'\n' || bytes[i - 1] == b'\r' || bytes[i - 1] == 0x0C;
+		let is_start = i == 0 || chars[i - 1] == '\n' || chars[i - 1] == '\r' || chars[i - 1] == '\u{000C}';
 		if is_start {
-			let slice = &text[i..];
-			let matches_chapter = slice.starts_with("Chapter ")
-				|| slice.starts_with("CHAPTER ")
-				|| slice.starts_with("chapter ")
-				|| slice.starts_with("Episode ")
-				|| slice.starts_with("EPISODE ")
-				|| slice.starts_with("Ch. ")
-				|| slice.starts_with("ch. ");
+			let remaining = &chars[i..];
+			let is_chap = (remaining.len() >= 9
+				&& remaining[0..8].iter().collect::<String>().to_lowercase() == "chapter "
+				&& remaining[8].is_ascii_digit())
+				|| (remaining.len() >= 9
+					&& remaining[0..8].iter().collect::<String>().to_lowercase() == "episode "
+					&& remaining[8].is_ascii_digit())
+				|| (remaining.len() >= 5
+					&& remaining[0..4].iter().collect::<String>().to_lowercase() == "ch. "
+					&& remaining[4].is_ascii_digit());
 
-			if matches_chapter {
-				let prefix_len = if slice.starts_with("Chapter ") || slice.starts_with("CHAPTER ") || slice.starts_with("chapter ") || slice.starts_with("Episode ") || slice.starts_with("EPISODE ") {
-					8
-				} else {
-					4 // "Ch. "
-				};
-				if slice.len() > prefix_len && slice.as_bytes()[prefix_len].is_ascii_digit() {
-					marker_positions.push(i);
-				}
+			if is_chap {
+				marker_positions.push(i);
 			}
 		}
 		i += 1;
 	}
 
 	if marker_positions.is_empty() {
-		chapters.push(ChapterEntry {
+		return vec![ChapterEntry {
 			index: 1,
 			title: "Full Document".to_string(),
 			start_pos: 0,
-			end_pos: text.len(),
-		});
-		return chapters;
+			end_pos: chars.len(),
+		}];
 	}
 
+	let mut chapters = Vec::with_capacity(marker_positions.len());
 	for (idx, &start) in marker_positions.iter().enumerate() {
 		let end = if idx + 1 < marker_positions.len() {
 			marker_positions[idx + 1]
 		} else {
-			text.len()
+			chars.len()
 		};
 
-		let slice = &text[start..end];
-		let first_line = slice.lines().next().unwrap_or("").trim();
-		let title = if first_line.is_empty() {
+		let slice = &chars[start..end];
+		let mut first_line = String::new();
+		for &c in slice {
+			if c == '\n' || c == '\r' {
+				break;
+			}
+			first_line.push(c);
+		}
+		let trimmed_title = first_line.trim_start_matches('\u{000C}').trim();
+		let title = if trimmed_title.is_empty() {
 			format!("Chapter {}", idx + 1)
 		} else {
-			first_line.to_string()
+			trimmed_title.to_string()
 		};
 
 		chapters.push(ChapterEntry {
@@ -219,62 +254,64 @@ pub fn find_chapter_boundaries(text: &str) -> Vec<ChapterEntry> {
 	chapters
 }
 
-pub fn build_chapter_markdown(text: &str, flags: &[u8], start: usize, end: usize) -> String {
-	let bounded_start = core::cmp::min(start, text.len());
-	let bounded_end = core::cmp::min(end, text.len());
+pub fn build_chapter_markdown(chars: &[char], flags: &[u8], start: usize, end: usize) -> String {
+	let bounded_start = core::cmp::min(start, chars.len());
+	let bounded_end = core::cmp::min(end, chars.len());
 	if bounded_start >= bounded_end {
 		return String::new();
 	}
 
-	let slice_text = &text[bounded_start..bounded_end];
+	let mut lines: Vec<(Vec<char>, Vec<u8>)> = Vec::new();
+	let mut cur_line_chars = Vec::new();
+	let mut cur_line_flags = Vec::new();
+
+	for i in bounded_start..bounded_end {
+		let c = chars[i];
+		let fl = if i < flags.len() { flags[i] } else { 0 };
+
+		if c == '\n' {
+			lines.push((cur_line_chars, cur_line_flags));
+			cur_line_chars = Vec::new();
+			cur_line_flags = Vec::new();
+		} else if c == '\r' {
+			continue;
+		} else {
+			cur_line_chars.push(c);
+			cur_line_flags.push(fl);
+		}
+	}
+	if !cur_line_chars.is_empty() {
+		lines.push((cur_line_chars, cur_line_flags));
+	}
+
 	let mut formatted_paragraphs = Vec::new();
-	let mut offset = bounded_start;
 
-	for line in slice_text.lines() {
-		let stripped = line.trim();
-		if stripped.is_empty() {
-			offset += line.len() + 1;
+	for (line_chars, line_flags) in lines {
+		let line_str: String = line_chars.iter().collect();
+		let trimmed = line_str.trim();
+		if trimmed.is_empty() {
 			continue;
 		}
 
-		// Handle form feed / page break
-		if stripped == "\u{000C}" || stripped == "\u{000C}\u{000C}" {
+		if trimmed == "\u{000C}" || trimmed == "\u{000C}\u{000C}" {
 			formatted_paragraphs.push("---".to_string());
-			offset += line.len() + 1;
 			continue;
 		}
 
-		let clean_line = line.trim_start_matches('\u{000C}');
-		if line.starts_with('\u{000C}') && !formatted_paragraphs.is_empty() {
-			formatted_paragraphs.push("---".to_string());
-		}
-
-		let trimmed_clean = clean_line.trim();
-
-		// Chapter title heading
-		let is_chapter_heading = trimmed_clean.starts_with("Chapter ")
-			|| trimmed_clean.starts_with("CHAPTER ")
-			|| trimmed_clean.starts_with("chapter ")
-			|| trimmed_clean.starts_with("Episode ")
-			|| trimmed_clean.starts_with("EPISODE ")
-			|| trimmed_clean.starts_with("Ch. ");
-
-		if is_chapter_heading {
-			formatted_paragraphs.push(format!("## {trimmed_clean}"));
-			offset += line.len() + 1;
+		let lower = trimmed.to_lowercase();
+		if (lower.starts_with("chapter ") && trimmed.len() > 8 && trimmed.as_bytes()[8].is_ascii_digit())
+			|| (lower.starts_with("episode ") && trimmed.len() > 8 && trimmed.as_bytes()[8].is_ascii_digit())
+			|| (lower.starts_with("ch. ") && trimmed.len() > 4 && trimmed.as_bytes()[4].is_ascii_digit())
+		{
+			formatted_paragraphs.push(format!("## {trimmed}"));
 			continue;
 		}
 
-		// Line flags
-		let line_start = offset + (line.len() - clean_line.len());
-
-		let mut p_out = String::with_capacity(clean_line.len() + 32);
+		let mut p_out = String::with_capacity(line_chars.len() + 16);
 		let mut in_bold = false;
 		let mut in_italic = false;
 
-		for (idx, ch) in clean_line.chars().enumerate() {
-			let flag_idx = line_start + idx;
-			let fl = if flag_idx < flags.len() { flags[flag_idx] } else { 0 };
+		for (&c, &fl) in line_chars.iter().zip(line_flags.iter()) {
 			let is_b = (fl & 1) != 0;
 			let is_i = (fl & 2) != 0;
 
@@ -282,13 +319,17 @@ pub fn build_chapter_markdown(text: &str, flags: &[u8], start: usize, end: usize
 				p_out.push_str("**");
 				in_bold = is_b;
 			}
-
 			if is_i != in_italic {
 				p_out.push('*');
 				in_italic = is_i;
 			}
 
-			p_out.push(ch);
+			// Escape literal '*' so Markdown does not strip star symbols
+			if c == '*' {
+				p_out.push_str("\\*");
+			} else {
+				p_out.push(c);
+			}
 		}
 
 		if in_italic {
@@ -298,18 +339,21 @@ pub fn build_chapter_markdown(text: &str, flags: &[u8], start: usize, end: usize
 			p_out.push_str("**");
 		}
 
-		// Normalize bracketed formatting e.g. [** ... ]** -> **[ ... ]**
-		let mut res = p_out;
+		let mut res = p_out.trim().to_string();
 		if res.starts_with("[**") && res.ends_with("]**") {
 			res = format!("**[{}]**", &res[3..res.len() - 3]);
 		}
-
-		let trimmed_res = res.trim();
-		if !trimmed_res.is_empty() {
-			formatted_paragraphs.push(trimmed_res.to_string());
+		if res.starts_with("[**") && res.contains("]**") {
+			res = res.replace("[**", "**[").replace("]**", "]**");
+		}
+		while res.contains("****") {
+			res = res.replace("****", "");
 		}
 
-		offset += line.len() + 1;
+		let final_str = res.trim();
+		if !final_str.is_empty() {
+			formatted_paragraphs.push(final_str.to_string());
+		}
 	}
 
 	let mut result = String::new();
