@@ -173,10 +173,13 @@ impl Source for FuckNovelPia {
 			let mut pos = 0;
 
 			while let Some(idx) = html[pos..].find("href=\"/chapter.php?") {
-				let abs_start = pos + idx + 18;
+				let abs_start = pos + idx + 19; // "href=\"/chapter.php?".len() == 19
 				if let Some(end) = html[abs_start..].find('\"') {
 					let raw_query = &html[abs_start..abs_start + end];
-					let query_str = raw_query.replace("&amp;", "&");
+					let query_str = raw_query
+						.trim_start_matches('?')
+						.trim_start_matches('/')
+						.replace("&amp;", "&");
 					
 					if !seen_keys.contains(&query_str) {
 						seen_keys.push(query_str.clone());
@@ -233,7 +236,13 @@ impl Source for FuckNovelPia {
 	}
 
 	fn get_page_list(&self, _manga: Manga, chapter: Chapter) -> Result<Vec<Page>> {
-		let clean_key = chapter.key.replace("&amp;", "&");
+		let clean_key = chapter
+			.key
+			.trim_start_matches('/')
+			.trim_start_matches("chapter.php")
+			.trim_start_matches('?')
+			.replace("&amp;", "&");
+
 		let url = if clean_key.starts_with("http") {
 			clean_key
 		} else {
@@ -323,10 +332,13 @@ impl DeepLinkHandler for FuckNovelPia {
 				return Ok(Some(DeepLinkResult::Manga { key: slug.to_string() }));
 			}
 		} else if path.starts_with("/chapter.php?") {
-			let query = path.trim_start_matches("/chapter.php?");
+			let query = path
+				.trim_start_matches("/chapter.php?")
+				.trim_start_matches('?')
+				.replace("&amp;", "&");
 			return Ok(Some(DeepLinkResult::Chapter {
 				manga_key: String::new(),
-				key: query.to_string(),
+				key: query,
 			}));
 		}
 
